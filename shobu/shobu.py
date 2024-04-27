@@ -5,6 +5,7 @@ import copy
 import field as fd
 import config as con
 import global_value as g
+import text as text
 
 # set loggger
 logger = logging.getLogger("logger")
@@ -16,55 +17,51 @@ screen = pygame.display.set_mode(con.SCREEN_SIZE)
 clock = pygame.time.Clock()
 running = True
 
-# setup fonts
-p = pygame.font.Font(None,con.P_FONT_SIZE)
-h1 = pygame.font.Font(None,con.H1_FONT_SIZE)
-h2 = pygame.font.Font(None,con.H2_FONT_SIZE)
-h3 = pygame.font.Font(None,con.H3_FONT_SIZE)
+# text setup
+turn_black = text.Text(*con.BLACK_TURN_SETTING)
+turn_white = text.Text(*con.WHITE_TURN_SETTING)
+black_win = text.Text(*con.BLACK_WIN_SETTING)
+white_win = text.Text(*con.WHITE_WIN_SETTING)
+black_win.position_center()
+white_win.position_center()
 
-# create font class
-player_black = h3.render("BLACK",True,"black")
-player_white = h3.render("WHITE",True,"black")
-undo_button = h2.render("Undo Move",True,"black","white")
-confirm_skelton = h2.render("Next  Turn  ",True,"dark grey","light grey") 
-confirm_button = h2.render("Next  Turn  ",True,"black","white")
+# button setup
+undo_button = text.Button(*con.UNDO_BUTTON_SETTING)
+confirm_skelton = text.Button(*con.CONFIRM_SKELTON_SETTING) 
+confirm_button = text.Button(*con.CONFIRM_BUTTON_SETTING)
+reset_button = text.Button(*con.RESET_BUTTON_SETTING)
 
-# sizes of buttons (width, height)
-undo_button_size = undo_button.get_size()
-confirm_button_size = confirm_button.get_size()
-
-def undo_button_is_clicked(x,y):
-    if con.UNDO_BUTTON_POS[0] < x < con.UNDO_BUTTON_POS[0]+undo_button_size[0] and con.UNDO_BUTTON_POS[1] < y < con.UNDO_BUTTON_POS[1]+undo_button_size[1]:    
-        return True
-    else:
-        return False
-
-def confirm_button_is_clicked(x,y):
-    if con.CONFIRM_BUTTON_POS[0] < x < con.CONFIRM_BUTTON_POS[0]+confirm_button_size[0] and con.CONFIRM_BUTTON_POS[1] < y < con.CONFIRM_BUTTON_POS[1]+confirm_button_size[1]:
-        return True
-    else:
-        return False
+# field setup
+fd1 = fd.Field(*con.FIELD1)
+fd2 = fd.Field(*con.FIELD2)
+fd5 = fd.Field(*con.FIELD5)
+fd6 = fd.Field(*con.FIELD6)
 
 # func for left click
 def left_click(x,y):
-    # if field is clicked
-    if fd1.is_clicked(x,y):
-        print("field1 is clicked")
-        fd1.click(x,y)
-    elif fd2.is_clicked(x,y):
-        print("field2 is clicked")
-        fd2.click(x,y)
-    elif fd5.is_clicked(x,y):
-        print("field5 is clicked")
-        fd5.click(x,y)
-    elif fd6.is_clicked(x,y):
-        print("field6 is clicked")
-        fd6.click(x,y)
-    elif undo_button_is_clicked(x,y):
+    if g.gameover:
+        reset_game()
+    else:
+        # if field is clicked
+        if fd1.is_clicked(x,y):
+            print("field1 is clicked")
+            fd1.click(x,y)
+        elif fd2.is_clicked(x,y):
+            print("field2 is clicked")
+            fd2.click(x,y)
+        elif fd5.is_clicked(x,y):
+            print("field5 is clicked")
+            fd5.click(x,y)
+        elif fd6.is_clicked(x,y):
+            print("field6 is clicked")
+            fd6.click(x,y)
+        elif undo_button.is_clicked(x,y):
             undo_move()
-    elif confirm_button_is_clicked(x,y):
-        if g.active_move():
-            confirm_move()
+        elif confirm_button.is_clicked(x,y):
+            if g.active_move():
+                confirm_move()
+        elif reset_button.is_clicked(x,y):
+            reset_game()
 
 def undo_move():
     g.passive = True
@@ -86,13 +83,13 @@ def confirm_move():
         if g.winner != 0:
             g.gameover = True
 
+def reset_game():
+    g.reset()
+    fd1.field = copy.deepcopy(con.FIELD_INNITIAL)
+    fd2.field = copy.deepcopy(con.FIELD_INNITIAL)
+    fd5.field = copy.deepcopy(con.FIELD_INNITIAL)
+    fd6.field = copy.deepcopy(con.FIELD_INNITIAL)
 
-# create field classes
-fd1 = fd.Field(*con.FIELD1)
-fd2 = fd.Field(*con.FIELD2)
-fd5 = fd.Field(*con.FIELD5)
-fd6 = fd.Field(*con.FIELD6)
-        
 
 # roop
 while running:
@@ -121,18 +118,24 @@ while running:
 
     # draw turn information
     if g.turn%2:
-        screen.blit(player_black,con.TURN_PLAYER_POS)
+        turn_black.draw(screen)
     else:
-        screen.blit(player_white,con.TURN_PLAYER_POS)
+        turn_white.draw(screen)
 
-
+    # draw reset button
+    reset_button.draw(screen)
     # draw undo button
-    screen.blit(undo_button, con.UNDO_BUTTON_POS)
+    undo_button.draw(screen)
     # draw confirm button
     if g.active_move():
-        screen.blit(confirm_button, con.CONFIRM_BUTTON_POS) 
+        confirm_button.draw(screen)
     else:
-        screen.blit(confirm_skelton, con.CONFIRM_BUTTON_POS) 
+        confirm_skelton.draw(screen)
+
+    if g.black_win():
+        black_win.draw(screen) 
+    elif g.white_win():
+        white_win.draw(screen)   
 
     # flip() the display to put your work on screen
     pygame.display.flip()

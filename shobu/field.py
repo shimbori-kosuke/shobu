@@ -5,15 +5,11 @@ import global_value as g
 import copy
 
 class Field():
-    def __init__(self,id,left,top,width,height):
+    def __init__(self,id,left,top):
         self.id = id
         self.left = left
         self.top = top
-        self.width = width
-        self.height = height
-        self.box_width = width/4
-        self.box_height = height/4
-        self.field_rect = pygame.Rect(left,top,width,height)
+        self.field_rect = pygame.Rect(left,top,con.FIELD_WIDTH,con.FIELD_HEIGHT)
         self.field = copy.deepcopy(con.FIELD_INNITIAL)
 
     # draw fields
@@ -21,25 +17,30 @@ class Field():
         # draw square for background
         pygame.draw.rect(surface, con.FIELD_BACKGROUND_COLOR, self.field_rect)
 
-        # draw lines of field
-        for i in range(5):
+        # draw horizontal lines of field
+        for i in range(con.FIELD_ROW+1):
             # start and end position for line
-            horizontal_start_pos = (self.left, self.top + self.height/4 * i)
-            horizontal_end_pos = (self.left + self.width, self.top + self.height/4 * i)
-            vertical_start_pos = (self.left + self.width/4 * i, self.top)
-            vertical_end_pos = (self.left + self.width/4 * i, self.top + self.height)
+            start_pos = (self.left, self.top + con.BOX_HEIGHT * i)
+            end_pos = (self.left + con.FIELD_WIDTH, self.top + con.BOX_HEIGHT * i)
             # draw lines
-            pygame.draw.line(surface, con.FIELD_LINES_COLOR, horizontal_start_pos, horizontal_end_pos)
-            pygame.draw.line(surface, con.FIELD_LINES_COLOR, vertical_start_pos, vertical_end_pos)
+            pygame.draw.line(surface, con.FIELD_LINES_COLOR, start_pos, end_pos)
+        
+        # draw vertical lines of field
+        for i in range(con.FIELD_COL+1):
+            # start and end position for line
+            start_pos = (self.left + con.BOX_WIDTH * i, self.top)
+            end_pos = (self.left + con.BOX_WIDTH * i, self.top + con.FIELD_HEIGHT)
+            # draw lines
+            pygame.draw.line(surface, con.FIELD_LINES_COLOR, start_pos, end_pos)
 
         # paint box of selected stone and draw circle in available boxes
         if g.passive_move() and g.passive_stone['id'] == self.id:
             x = g.passive_stone['col']
             y = g.passive_stone['row']
             
-            rect_left = self.left + self.box_width * x
-            rect_top = self.top + self.box_height * y
-            rect = pygame.Rect(rect_left,rect_top,self.box_width,self.box_height)
+            rect_left = self.left + con.BOX_WIDTH * x
+            rect_top = self.top + con.BOX_HEIGHT * y
+            rect = pygame.Rect(rect_left,rect_top,con.BOX_WIDTH,con.BOX_HEIGHT)
 
             # paint box of selected stone for passive move
             pygame.draw.rect(surface, con.SELECTED_COLOR, rect)
@@ -51,8 +52,8 @@ class Field():
                 x = box[1]
                 y = box[0]
 
-                center_x = self.left + self.box_width/2 + x*self.box_width
-                center_y = self.top + self.box_height/2 + y*self.box_height
+                center_x = self.left + con.BOX_WIDTH/2 + x*con.BOX_WIDTH
+                center_y = self.top + con.BOX_HEIGHT/2 + y*con.BOX_HEIGHT
                 center = (center_x,center_y)
                 pygame.draw.circle(surface, color, center, radius)
         
@@ -60,9 +61,9 @@ class Field():
             x = g.active_stone['col']
             y = g.active_stone['row']
             
-            rect_left = self.left + self.box_width * x
-            rect_top = self.top + self.box_height * y
-            rect = pygame.Rect(rect_left,rect_top,self.box_width,self.box_height)
+            rect_left = self.left + con.BOX_WIDTH * x
+            rect_top = self.top + con.BOX_HEIGHT * y
+            rect = pygame.Rect(rect_left,rect_top,con.BOX_WIDTH,con.BOX_HEIGHT)
 
             # paint box of selected stone for active move
             pygame.draw.rect(surface, con.SELECTED_COLOR, rect)
@@ -71,18 +72,18 @@ class Field():
         for y,row in enumerate(self.field):
             for x,box in enumerate(row):
                 if box == 2:
-                    center_x = self.left + self.box_width/2 + x*self.box_width
-                    center_y = self.top + self.box_height/2 + y*self.box_height
+                    center_x = self.left + con.BOX_WIDTH/2 + x*con.BOX_WIDTH
+                    center_y = self.top + con.BOX_HEIGHT/2 + y*con.BOX_HEIGHT
                     center = (center_x,center_y)
                     pygame.draw.circle(surface, con.WHITE_STONE_COLOR, center, con.STONE_RADIUS)
                 elif box == 3:
-                    center_x = self.left + self.box_width/2 + x*self.box_width
-                    center_y = self.top + self.box_height/2 + y*self.box_height
+                    center_x = self.left + con.BOX_WIDTH/2 + x*con.BOX_WIDTH
+                    center_y = self.top + con.BOX_HEIGHT/2 + y*con.BOX_HEIGHT
                     center = (center_x,center_y)
                     pygame.draw.circle(surface, con.BLACK_STONE_COLOR, center, con.STONE_RADIUS)
 
     def is_clicked(self,x,y):
-        if self.left < x < self.left+self.width and self.top < y < self.top+self.height:
+        if self.left < x < self.left+con.FIELD_WIDTH and self.top < y < self.top+con.FIELD_HEIGHT:
             return True
         else:
             return False
@@ -105,8 +106,8 @@ class Field():
         # check which box is clicked
         field_x = x - self.left
         field_y = y - self.top
-        row = int(field_y / self.box_height)
-        col = int(field_x / self.box_width)
+        row = int(field_y / con.BOX_HEIGHT)
+        col = int(field_x / con.BOX_WIDTH)
         # if turn player's field and stone
         if self.id % 2 == g.turn%2 and self.field[row][col] == g.turn%2+2:
             # check available box
@@ -133,8 +134,8 @@ class Field():
     def passive_move_select(self,x,y):
         field_x = x - self.left
         field_y = y - self.top
-        row = int(field_y / self.box_height)
-        col = int(field_x / self.box_width)
+        row = int(field_y / con.BOX_HEIGHT)
+        col = int(field_x / con.BOX_WIDTH)
         if self.id == g.passive_stone['id'] and [row, col] in g.available:
             row_move = row - g.passive_stone['row']
             col_move = col - g.passive_stone['col']
@@ -151,8 +152,8 @@ class Field():
     def active_stone_select(self,x,y):
         field_x = x - self.left
         field_y = y - self.top
-        row = int(field_y / self.box_height)
-        col = int(field_x / self.box_width)
+        row = int(field_y / con.BOX_HEIGHT)
+        col = int(field_x / con.BOX_WIDTH)
         # if active move's field and turn player's stone
         if abs(self.id - g.passive_stone['id']) > 2 and self.field[row][col] == g.turn%2+2:
             # check if selected stone can move
