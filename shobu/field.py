@@ -14,7 +14,7 @@ class Field():
         self.box_width = width/4
         self.box_height = height/4
         self.field_rect = pygame.Rect(left,top,width,height)
-        self.field = [[2,2,2,2],[0,0,0,0],[0,0,0,0],[3,3,3,3]]
+        self.field = copy.deepcopy(con.FIELD_INNITIAL)
 
     # draw fields
     def draw(self,surface):
@@ -28,14 +28,14 @@ class Field():
             horizontal_end_pos = (self.left + self.width, self.top + self.height/4 * i)
             vertical_start_pos = (self.left + self.width/4 * i, self.top)
             vertical_end_pos = (self.left + self.width/4 * i, self.top + self.height)
-            #draw lines
+            # draw lines
             pygame.draw.line(surface, con.FIELD_LINES_COLOR, horizontal_start_pos, horizontal_end_pos)
             pygame.draw.line(surface, con.FIELD_LINES_COLOR, vertical_start_pos, vertical_end_pos)
 
         # paint box of selected stone and draw circle in available boxes
-        if g.passive and not g.select and g.passive_stone[0] == self.id:
-            x = g.passive_stone[2]
-            y = g.passive_stone[1]
+        if g.passive_move() and g.passive_stone['id'] == self.id:
+            x = g.passive_stone['col']
+            y = g.passive_stone['row']
             
             rect_left = self.left + self.box_width * x
             rect_top = self.top + self.box_height * y
@@ -56,9 +56,9 @@ class Field():
                 center = (center_x,center_y)
                 pygame.draw.circle(surface, color, center, radius)
         
-        elif not g.passive and not g.select and g.active_stone[0] == self.id:
-            x = g.active_stone[2]
-            y = g.active_stone[1]
+        elif g.active_move() and g.active_stone['id'] == self.id:
+            x = g.active_stone['col']
+            y = g.active_stone['row']
             
             rect_left = self.left + self.box_width * x
             rect_top = self.top + self.box_height * y
@@ -80,20 +80,29 @@ class Field():
                     center_y = self.top + self.box_height/2 + y*self.box_height
                     center = (center_x,center_y)
                     pygame.draw.circle(surface, con.BLACK_STONE_COLOR, center, con.STONE_RADIUS)
+
+    def is_clicked(self,x,y):
+        if self.left < x < self.left+self.width and self.top < y < self.top+self.height:
+            return True
+        else:
+            return False
     
     # click the field
     def click(self,x,y):
-        if g.passive and g.select:
+        print(self.id)
+        if g.passive_select():
             self.passive_stone_select(x,y)
-        elif g.passive and not g.select:
+            print(g.passive_stone)
+        elif g.passive_move():
             self.passive_move_select(x,y)
-        elif not g.passive and g.select:
+            print(g.move)
+        elif g.active_select():
             self.active_stone_select(x,y)
-        # else:
-        #     self.reset_move(x,y)
+            print(g.active_stone)
     
     # select stone for passive move
     def passive_stone_select(self,x,y):
+        # check which box is clicked
         field_x = x - self.left
         field_y = y - self.top
         row = int(field_y / self.box_height)
@@ -110,14 +119,14 @@ class Field():
                 if 0 <= check_row <= 3 and 0 <= check_col <= 3:
                     if self.field[check_row][check_col] == 0:
                         g.available.append([check_row, check_col])
-                        check_row = row+2*r
-                        check_col = col+2*c
+                        check_row += r
+                        check_col += c
                     if 0 <= check_row <= 3 and 0 <= check_col <= 3:
                         if self.field[check_row][check_col] == 0:
                             g.available.append([check_row, check_col])
-                                       
-
-            g.passive_stone = [self.id, row, col]
+            g.passive_stone['id'] = self.id
+            g.passive_stone['row'] = row
+            g.passive_stone['col'] = col
             g.select = False
 
     # select move
@@ -126,10 +135,13 @@ class Field():
         field_y = y - self.top
         row = int(field_y / self.box_height)
         col = int(field_x / self.box_width)
-        if self.id == g.passive_stone[0] and [row, col] in g.available:
-            g.move_number = max(abs(row - g.passive_stone[1]),abs(col - g.passive_stone[2]))
-            g.move_direction = [int((row - g.passive_stone[1])/max(1,abs(row - g.passive_stone[1]))), int((col - g.passive_stone[2])/max(1,abs(col - g.passive_stone[2])))]
-            self.field[g.passive_stone[1]][g.passive_stone[2]] = 0
+        if self.id == g.passive_stone['id'] and [row, col] in g.available:
+            row_move = row - g.passive_stone['row']
+            col_move = col - g.passive_stone['col']
+            g.move['num'] = max(abs(row_move),abs(col_move))
+            g.move['row'] = int((row_move)/max(1,abs(row_move)))
+            g.move['col'] = int((col_move)/max(1,abs(col_move)))
+            self.field[g.passive_stone['row']][g.passive_stone['col']] = 0
             self.field[row][col] = g.turn%2+2
             g.passive = False
         g.select = True
@@ -142,15 +154,16 @@ class Field():
         row = int(field_y / self.box_height)
         col = int(field_x / self.box_width)
         # if active move's field and turn player's stone
-        if abs(self.id - g.passive_stone[0]) > 2 and self.field[row][col] == g.turn%2+2:
+        if abs(self.id - g.passive_stone['id']) > 2 and self.field[row][col] == g.turn%2+2:
             # check if selected stone can move
             can_move = True
             check_row = row
             check_col = col
             field_cp = copy.deepcopy(self.field) # stuck of field
-            for i in range(g.move_number):
-                move_row = check_row + g.move_direction[0]
-                move_col = check_col + g.move_direction[1]
+
+            for i in range(g.move['num']):
+                move_row = check_row + g.move['row']
+                move_col = check_col + g.move['col']
 
                 # if move_box is out of the field : can't move
                 if move_row < 0 or 3 < move_row or move_col < 0 or 3 < move_col:
@@ -164,8 +177,8 @@ class Field():
                         break
                     # if opponent's stone is in move_box
                     elif move_box == (g.turn+1)%2+2:
-                        next_row = move_row + g.move_direction[0]
-                        next_col = move_col + g.move_direction[1]
+                        next_row = move_row + g.move['row']
+                        next_col = move_col + g.move['col']
                         # if next_box exists
                         if 0 <= next_row <= 3 and 0 <= next_col <= 3:
                             next_box = field_cp[next_row][next_col]
@@ -195,7 +208,9 @@ class Field():
             # if stone can move
             if can_move:
                 g.select = False
-                g.active_stone = [self.id, row, col]
+                g.active_stone['id'] = self.id
+                g.active_stone['row'] = row
+                g.active_stone['col'] = col
                 self.field = copy.deepcopy(field_cp)
                 game_over = True
                 for row in self.field:
@@ -203,9 +218,3 @@ class Field():
                         game_over = False
                 if game_over:
                     g.winner = g.turn%2+2
-
-    # # confirm move, go on next turn
-    # def reset_move(self,x,y):
-    #     g.passive = True
-    #     g.select = True
-    #     g.winner = 0
