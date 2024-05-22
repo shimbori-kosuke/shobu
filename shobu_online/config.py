@@ -1,3 +1,16 @@
+# server config
+SERVER_HOST = "localhost"
+
+SERVER_PORT = 8080
+#SERVER_PORT = 2222
+SERVER_BUFSIZE = 1024
+
+# client config
+CLIENT_HOST = "localhost"
+
+CLIENT_PORT = 2222
+#CLIENT_PORT = 8080
+
 # screen size
 SCREEN_SIZE = (1280, 720) # width,height
 SCREEN_CENTER = (SCREEN_SIZE[0]/2, SCREEN_SIZE[1]/2)
