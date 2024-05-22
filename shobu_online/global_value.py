@@ -17,6 +17,7 @@ turn = 1
 # turn%2 = black:1 white:0
 # turn%2 + 2 = black:3 white:2 <- same as stone
 
+# functions to handle global values
 def passive_select():
     if passive and select:
         return True
