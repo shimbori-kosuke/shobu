@@ -37,7 +37,7 @@ fd2 = fd.Field(*con.FIELD2)
 fd5 = fd.Field(*con.FIELD5)
 fd6 = fd.Field(*con.FIELD6)
 
-# func for left click
+# left click
 def left_click(x,y):
     if g.gameover:
         reset_game()
