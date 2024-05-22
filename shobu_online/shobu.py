@@ -1,15 +1,23 @@
 import logging
 import pygame
 import copy
+import queue
 
 import field as fd
 import config as con
 import global_value as g
 import text as text
+import server as ser
+import client as cli
 
 # set loggger
 logger = logging.getLogger("logger")
 logger.setLevel(logging.DEBUG)
+
+# setup for online
+q = queue.Queue()
+client = cli.Client(q)
+server = ser.Server(q)
 
 # pygame setup
 pygame.init()
@@ -105,7 +113,11 @@ while running:
             if event.button == 1:
                 x,y = event.pos
                 left_click(x,y)
-                
+                client.c2s(con.CLIENT_HOST,con.CLIENT_PORT,x,y)
+
+    if q.empty()==False:
+        x,y = q.get()
+        left_click(int(x),int(y))
                     
     # fill the screen with a color to wipe away anything from last frame
     screen.fill(con.BACKGROUND_COLOR)
