@@ -1,41 +1,29 @@
-import os
 import socket
+import threading
 
-class BlockingServerBase:
-    def __init__(self, timeout:int=60, buffer:int=1024):
-        self.__socket = None
-        self.__timeout = timeout
-        self.__buffer = buffer
-        self.close()
+import config as con
 
-    def __del__(self):
-        self.close()
+class Server():#サーバー側(受信側の処理)
+    def __init__(self,q):
+        self.q = q
+        self.host = con.SERVER_HOST
+        self.port = con.SERVER_PORT
+        self.bufsize = con.SERVER_BUFSIZE
 
-    def close(self) -> None:
+        self.sock =  socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.sock.bind((self.host, self.port))
+        self.thread = threading.Thread(target=self.c2s, daemon=True)
+        self.thread.start()
+
+    def c2s(self):#サーバー側へ受信
         try:
-            self.__socket.shutdown(socket.SHUT_RDWR)
-            self.__socket.close()
-        except:
-            pass
+            while True:
+                msg, cli_addr = self.sock.recvfrom(self.bufsize)
+                pos = tuple(msg.decode('utf-8').split(','))
+                self.q.put(pos)
+                print(msg)
+                print(pos)
+        except Exception as e:
+            print(e)
 
-    def accept(self, address, family:int, typ:int, proto:int) -> None:
-        self.__socket = socket.socket(family, typ, proto)
-        self.__socket.settimeout(self.__timeout)
-        self.__socket.bind(address)
-        self.__socket.listen(1)
-        print("Server started :", address)
-        conn, _ = self.__socket.accept()
-
-        while True:
-            try:
-                message_recv = conn.recv(self.__buffer).decode('utf-8')
-                message_resp = self.respond(message_recv)
-                conn.send(message_resp.encode('utf-8'))
-            except ConnectionResetError:
-                break
-            except BrokenPipeError:
-                break
-        self.close()
-
-    def respond(self, message:str) -> str:
-        return ""
+        # self.sock.close()  
